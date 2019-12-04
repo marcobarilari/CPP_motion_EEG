@@ -1,5 +1,5 @@
 
-function [directions,speeds,modalities,EventDuration] = SS_Mot_ExpDesign(Cfg)
+function [directions, speeds, modalities, EventDuration] = SS_Mot_ExpDesign(Cfg)
 
 
 % if Trial set the trial Cfg
@@ -12,38 +12,29 @@ end
 
 
 
-Freq = Cfg.BaseFreq 
+Freq = Cfg.BaseFreq  %#ok<*NOPRT>
 EventDuration = 1/Freq
 
 speedEvent = Cfg.speedEvent;
 numRepetitions = Cfg.numRepetitions 
 
-%numRepetitions = 4;
-%%Freq = 5; 
-
-directions = repmat(-1,(Freq*numRepetitions) ,1)
+directions = repmat(-1,(Freq*numRepetitions), 1)
 numEvents = length(directions);
 
-directions([Freq:Freq*2:length(directions)])=0 ;
+directions([Freq:Freq*2:length(directions)])=0 ; %#ok<*NBRAK>
 directions([Freq*2:Freq*2:length(directions)])=180 ;
-
 
 speeds=ones(numEvents,1)* speedEvent ;       % a matrix of speed values for each event 
 
+modalities = repmat({'visual'}, numEvents, 1);
 
-if strcmp(Cfg.possibleModalities,'visual')
-    modalities = repmat({'visual'},numEvents,1)
-elseif strcmp(Cfg.possibleModalities,'auditory')
-    modalities = repmat({'auditory'},numEvents,1)
-    
-end
 end
 
 %% Trial Cfg 
 % Setting a trial Cfg for testing purposes only
 function Cfg = trial_Cfg()
-Cfg.BaseFreq = 5;
+Cfg.BaseFreq = 2; % hz
 Cfg.speedEvent = 6 ;
-Cfg.numRepetitions =2;
+Cfg.numRepetitions = 2;
 Cfg.possibleModalities = {'visual'};
 end
