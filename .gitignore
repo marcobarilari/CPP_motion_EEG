@@ -1,4 +1,5 @@
 *.DS_store
 *.txt
+*.tsv
 *.mat
 *.m~

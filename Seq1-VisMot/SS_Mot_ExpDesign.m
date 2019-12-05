@@ -1,5 +1,20 @@
 function [Cfg, directions, speeds, EventDuration] = SS_Mot_ExpDesign(Cfg)
 
+if Cfg.debug
+    % number of event per condition
+    Cfg.numRepetitions = 20;
+    Cfg.BaseFreq = 2;
+    Cfg.speed = .00001; % event speed in visual angle per second
+else
+    % number of event per condition
+    Cfg.numRepetitions = 60;
+    Cfg.BaseFreq = 8;
+    Cfg.speed = .00001; % event speed in visual angle per second
+end
+
+Cfg.task = 'motionFVP';
+Cfg.sequence = 1;
+
 
 %% Parameters for monitor setting
 Cfg.mon_horizontal_cm = 30; % Width of the monitor in cm
@@ -9,9 +24,7 @@ Cfg.apD = 40; % diameter/length of side of aperture in Visual angles
 
 %% Dots param
 % Maximum number dots per frame
-Cfg.maxDotsPerFrame = 300;                        
-% Dot life time in seconds
-Cfg.dotLifeTime = 1;                            
+Cfg.maxDotsPerFrame = 300;                                                  
 Cfg.dontclear = 0;
 Cfg.dotSize = .7;
 
@@ -20,12 +33,14 @@ Cfg.dotSize = .7;
 % Used Pixels here since it really small and can be adjusted during the experiment
 Cfg.fixCrossDimPix = 10;   % Set the length of the lines (in Pixels) of the fixation cross
 Cfg.lineWidthPix = 4;      % Set the line width (in Pixels) for our fixation cross
+% manual displacement of the fixation cross
+Cfg.xDisplacementFixCross = 0 ;
+Cfg.yDisplacementFixCross = 0 ;
 
 
 %% Color Parameters
 White = [255 255 255]; 
 Black = [ 0   0   0 ]; 
-
 
 Cfg.textColor           = White ; 
 Cfg.Background_color    = Black ; 
@@ -33,7 +48,14 @@ Cfg.fixationCross_color = White ;
 Cfg.dotColor            = White ; 
 
 
+%% Timing
+% number of seconds before the motion stimuli are presented
+Cfg.onsetDelay = 2;
+
+
 %% Trigger EEG
+% set to EEG to use triggers
+Cfg.device = 'PC'; %EEG
 Cfg.trigger.abort = 10;
 Cfg.trigger.start = 1;
 Cfg.trigger.end = 5;
@@ -56,6 +78,9 @@ directions([ Freq*2:Freq*2:length(directions) ]) =180 ;
 
 % a matrix of speed values for each event
 speeds = ones(length(directions),1) * Cfg.speed ; 
+
+% a matrix of speed values for each event
+EventDuration = ones(length(directions),1) * EventDuration ; 
 
 more off
 

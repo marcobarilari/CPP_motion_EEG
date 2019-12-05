@@ -11,7 +11,7 @@ FrameInMovie = floor(duration/Cfg.ifi) - blank_frames;
 
 
 
-FrameInMovie = 1000;
+FrameInMovie = 200;
 FractionToResamp = 5*10^-4; % per frame
 
 
@@ -82,8 +82,6 @@ while FrameLeft > 0
     
 end
 
-
-%% Present last dots
 % Draw the fixation cross
 Screen('DrawLines', w, Cfg.allCoords, Cfg.lineWidthPix, Cfg.fixationCross_color, [Cfg.center(1) Cfg.center(2)], 1);
 
