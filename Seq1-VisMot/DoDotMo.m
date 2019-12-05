@@ -5,23 +5,20 @@ function responseTimeWithinEvent = DoDotMo(Cfg, directions, dotSpeed, duration)
 dontclear = Cfg.dontclear;
 
 % Dot stuff
-coh = Cfg.coh;
-dotSize = Cfg.dotSize;
-dotLifeTime = Cfg.dotLifeTime;
-maxDotsPerFrame = Cfg.maxDotsPerFrame;
 
-blank_frames = 3;
-if directions == -1
+blank_frames = 1;
+if directions < 0
     dotSpeed = 0;
 end
 
-dotColor = Cfg.dotColor ;
 
 responseTimeWithinEvent = [];
 
 w = Cfg.win;
+ndots = Cfg.ndots;
 
-ndots = min(maxDotsPerFrame, ceil( Cfg.d_ppd .* Cfg.d_ppd  / Cfg.monRefresh));
+% Show for how many frames
+continue_show = floor(duration/Cfg.ifi) - blank_frames;
 
 % dxdy is an N x 2 matrix that gives jumpsize in units on 0..1
 dxdy = repmat(dotSpeed * 10/(Cfg.apD*10) * (3/Cfg.monRefresh) ...
@@ -33,10 +30,8 @@ ss = rand(ndots*3, 2); % array of dot positions raw [xposition, yposition]
 % Divide dots into three sets
 Ls = cumsum(ones(ndots,3)) + repmat([0 ndots ndots*2], ndots, 1);
 
-% Show for how many frames
-continue_show = floor(duration/Cfg.ifi) - blank_frames;
 
-dotLifeTime = ceil(dotLifeTime/Cfg.ifi);   % Covert the dot LifeTime from seconds to frames
+
 
 % Create a ones vector to update to dotlife time of each dot
 dotTime = ones(size(Ls,1),2);
@@ -46,26 +41,26 @@ dotTime = ones(size(Ls,1),2);
 movieStartTime = GetSecs();
 
 
-while continue_show && GetSecs<=movieStartTime+duration
+while continue_show %&& GetSecs<=movieStartTime+duration
 
     % Get ss & xs from the big matrices. xs and ss are matrices that have
     % stuff for dots from the last 2 positions + current.
     % Ls picks out the previous set (1:5, 6:10, or 11:15)   
     % Lthis  = Ls(:,loopi); % Lthis picks out the loop from 3 times ago, which
-    Lthis  = Ls(:,1);
+    Lthis  = Ls(:);
     % is what is then moved in the current loop
     this_s = ss(Lthis,:);  % this is a matrix of random #s - starting position
 
     % Compute new locations
     % L are the dots that will be moved
-    L = rand(ndots,1) < coh;
+    L = rand(ndots,1) < Cfg.coh;
     this_s(L,:) = this_s(L,:) + dxdy(L,:);	% Offset the selected dots
     
     if sum(~L) > 0  % if not 100% coherence
         this_s(~L,:) = rand(sum(~L),2);	% get new random locations for the rest
     end
     
-    N = sum((this_s > 1 | this_s < 0 | repmat(dotTime(:,1) > dotLifeTime,1,2))')' ~= 0 ;
+    N = sum((this_s > 1 || this_s < 0 || repmat(dotTime(:,1) > Cfg.dotLifeTimeFrame,1,2))')' ~= 0 ;
     
     %% Re-allocate the dots to random positions
     if sum(N) > 0
@@ -85,23 +80,27 @@ while continue_show && GetSecs<=movieStartTime+duration
     % the aperture size to both the x and y direction.
     dot_show = (this_x(:,1:2) - Cfg.d_ppd/2)';
     
-    % Now do next drawing commands
-    % Draw the fixation 
-    Screen('DrawLines', w, Cfg.allCoords, Cfg.lineWidthPix, [255 255 255], [Cfg.center(1) Cfg.center(2)], 1);
+
     
     % NaN out-of-circle dots
     xyDis = dot_show;
-    outCircle = sqrt(xyDis(1,:).^2 + xyDis(2,:).^2) + dotSize/2 > (Cfg.d_ppd/2);
+    outCircle = sqrt(xyDis(1,:).^2 + xyDis(2,:).^2) + Cfg.dotSize/2 > (Cfg.d_ppd/2);
     dots2Display = dot_show;
     dots2Display(:,outCircle) = NaN;
     
-    Screen('DrawDots', w, dots2Display, dotSize, dotColor, Cfg.center,2);
+    % Now do next drawing commands
+    % Draw the fixation 
+    Screen('DrawLines', w, Cfg.allCoords, Cfg.lineWidthPix, Cfg.fixationCross_color, [Cfg.center(1) Cfg.center(2)], 1);
+    
+    Screen('DrawDots', w, dots2Display, Cfg.dotSize, Cfg.dotColor, Cfg.center,2);
     
     Screen('DrawingFinished', w, dontclear);
+    
     Screen('Flip', w, 0, dontclear);
     
-    % Update the arrays so xor works next time
+    % Update the arrays for works next time
     ss(Lthis, :) = this_s;
+    
     
     %% Check for end of loop
     continue_show = continue_show - 1;
