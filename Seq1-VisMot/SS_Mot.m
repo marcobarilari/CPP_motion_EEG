@@ -19,10 +19,10 @@ device = 'F';
  % Since its an event design, every block will have 1 event.
 Cfg.numEventsPerCondition = 1;
 % event speed
-Cfg.speed = .0001; % in visual angle per second
+Cfg.speed = .00001; % in visual angle per second
 % number of event per condition
 Cfg.numRepetitions = 60; 
-Cfg.BaseFreq = 4;
+Cfg.BaseFreq = 10;
 
 onsetDelay = 2; % number of seconds before the motion stimuli are presented
 
@@ -147,14 +147,12 @@ try
     
     Cfg.Experiment_start = GetSecs;
     
-    numEvents
-    
     % For each event
     for iEvent = 1:numEvents
         
         iEventDirection = directions(iEvent,1);    % Direction of that event
         iEventSpeed = speeds(iEvent,1);            % Speed of that event
-        iEventDuration = EventDuration ;           % Duration of events
+        iEventDuration = EventDuration;           % Duration of events
         
         % Event Onset
         eventOnsets(iEvent,1) = GetSecs-Cfg.Experiment_start;
@@ -198,7 +196,7 @@ try
     % fclose(EventTxtLogFile);
     % fclose(ResponsesTxtLogFile);
     
-    TotalExperimentTime = GetSecs-Cfg.Experiment_start
+    TotalExperimentTime = GetSecs-Cfg.Experiment_start;
     
     %% Save mat log files
     save(fullfile('logfiles',[subjectName,'_run_',num2str((runNumber)),'_all.mat']))

@@ -15,7 +15,7 @@ Cfg.coh = 1;                                      % Coherence Level (0-1)
 Cfg.maxDotsPerFrame = 300;                        % Maximum number dots per frame (Number must be divisible by 3)
 Cfg.dotLifeTime = 1;                            % Dot life time in seconds
 Cfg.dontclear = 0;
-Cfg.dotSize = .5;
+Cfg.dotSize = .7;
 
 
 %% Fixation Cross parameters
@@ -46,22 +46,13 @@ end
 Freq = Cfg.BaseFreq; 
 EventDuration = 1/Freq;
 
-% directions = repmat(0,(Freq*numRepetitions), 1);
-
 directions = repmat(-1, (Freq * Cfg.numRepetitions), 1);
-directions([ Freq:Freq*2:length(directions) ]) =0 ; %#ok<*NBRAK>
+directions([ Freq:Freq*2:length(directions) ]) = 0 ; %#ok<*NBRAK>
 directions([ Freq*2:Freq*2:length(directions) ]) =180 ;
 
 numEvents = length(directions);
 
 speeds = ones(numEvents,1) * Cfg.speed ;% a matrix of speed values for each event 
-
-modalities = repmat({'visual'}, numEvents, 1);
-
-% Check that the number is divisible by 3
-if mod(Cfg.maxDotsPerFrame,3) ~= 0
-    error('Number of dots should be divisible by 3.')
-end
 
 more off
 
@@ -73,5 +64,4 @@ function Cfg = trial_Cfg()
 Cfg.BaseFreq = 2; % hz
 Cfg.speedEvent = 6 ;
 Cfg.numRepetitions = 2;
-Cfg.possibleModalities = {'visual'};
 end
