@@ -3,7 +3,7 @@ function [Cfg, directions, speeds, EventDuration] = SS_Mot_ExpDesign(Cfg)
 if Cfg.debug
     % number of event per condition
     Cfg.numRepetitions = 20;
-    Cfg.BaseFreq = 2;
+    Cfg.BaseFreq = 3;
     Cfg.speed = .00001; % event speed in visual angle per second
 else
     % number of event per condition
@@ -51,6 +51,11 @@ Cfg.dotColor            = White ;
 %% Timing
 % number of seconds before the motion stimuli are presented
 Cfg.onsetDelay = 2;
+
+
+Cfg.ISI = 0.075;
+
+
 
 
 %% Trigger EEG

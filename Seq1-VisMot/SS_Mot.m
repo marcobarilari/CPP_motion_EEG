@@ -29,7 +29,6 @@ Cfg.debug = true;
 SkipSyncTest = 1 ;
 
 
-
 %% Experimental Design
 [Cfg, directions, speeds, EventDuration] = SS_Mot_ExpDesign(Cfg);
 numEvents = length(directions);
@@ -78,10 +77,12 @@ fprintf(EventTxtLogFile, '%s\t%s\t%s\t%s\t%s\n',...
 % put everything into a try / catch in case the poop hits the fan
 try
     
+    
     %% Open Parallel port if EEG
     if strcmp(Cfg.device, 'EEG')
         openparallelport_inpout32(hex2dec('d010'))
     end
+    
     
     %%  Initialize
     
@@ -129,6 +130,7 @@ try
     Cfg.ndots = min(Cfg.maxDotsPerFrame, ceil( Cfg.d_ppd .* Cfg.d_ppd  / Cfg.monRefresh));
     speeds = speeds * Cfg.ppd; % Convert the dot speed to pixels
     
+    
     %% Fixation Cross
     xCoords = [-Cfg.fixCrossDimPix Cfg.fixCrossDimPix 0 0] + Cfg.xDisplacementFixCross;
     yCoords = [0 0 -Cfg.fixCrossDimPix Cfg.fixCrossDimPix] + Cfg.yDisplacementFixCross;
@@ -157,6 +159,7 @@ try
         sendparallelbyte(0);
     end
     
+    
     % For each event
     for iEvent = 1:numEvents
         
@@ -169,7 +172,7 @@ try
         
         %% RUN DO DOTS
         
-        QUIT = DoDotMo( Cfg, iEventDirection, iEventSpeed, iEventDuration );
+        [QUIT, responseTime] = DoDotMo( Cfg, iEventDirection, iEventSpeed, iEventDuration );
         
         if strcmp(Cfg.device, 'EEG')
             sendparallelbyte(0);
@@ -191,7 +194,10 @@ try
             return
         end
         
-        %%
+        
+        %% ISI
+        WaitSecs(Cfg.ISI);
+        
         
         %% Event txt_Logfile
         
@@ -203,6 +209,15 @@ try
             iEventSpeed,...
             eventOnsets(iEvent,1),...
             eventEnds(iEvent,1));
+        
+        
+        
+        
+        
+        % collect responses
+        
+        
+        
         
     end
     
@@ -218,6 +233,7 @@ try
     
     fprintf('\n\n This experiment lasted %04.0f seconds. \n\n', TotalExperimentTime)
     
+    
     %% Save mat log files
     if IsOctave
         save([Filename '.mat'], '-mat7-binary');
@@ -227,10 +243,12 @@ try
     
     cleanUp
     
+    
 catch
     cleanUp
     psychrethrow(psychlasterror);
 end
+
 
 end
 
@@ -241,10 +259,5 @@ sca
 clear Screen % remove PsychDebugWindowConfiguration
 end
 
-function KeyCodes = setupKeyCodes
-% Setup keycode strusave([Filename' '.mat'])cture for typical keys
-KbName('UnifyKeyNames')
-KeyCodes.Resp = KbName('space');
-KeyCodes.Escape = KbName('ESCAPE');
-end
+
 

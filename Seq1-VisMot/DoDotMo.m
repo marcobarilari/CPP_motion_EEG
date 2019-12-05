@@ -1,11 +1,12 @@
-function QUIT = DoDotMo(Cfg, directions, dotSpeed, duration)
+function [QUIT, responseTime] = DoDotMo(Cfg, directions, dotSpeed, duration)
 %DODOTMO This function draws a specific type of dots
+
+responseTime = [];
 
 w = Cfg.win;
 
 % Show for how many frames
-blank_frames = 4;
-FrameInMovie = floor(duration/Cfg.ifi) - blank_frames;
+FrameInMovie = floor(duration/Cfg.ifi);
 
 
 
@@ -38,7 +39,11 @@ FrameLeft = FrameInMovie;
 
 while FrameLeft > 0
     
-    [QUIT] = getBehResp(Cfg);
+    [QUIT, responseTime] = getBehResp(Cfg, responseTime);
+    
+    if QUIT
+        return
+    end
 
     % Convert to stuff we can actually plot
     this_x(:,1:2) = Cfg.d_ppd(1) * dotPosition;
@@ -87,20 +92,8 @@ Screen('DrawLines', w, Cfg.allCoords, Cfg.lineWidthPix, Cfg.fixationCross_color,
 
 Screen('Flip', w, 0);
 
-WaitSecs(Cfg.ifi*blank_frames);
+
 
 end
 
-
-function [QUIT] = getBehResp(Cfg)
-
-[Keypr, ~, Key] = KbCheck;
-
-QUIT = false;
-
-if Keypr && Key(Cfg.KeyCodes.Escape)
-    QUIT= true;
-end
-
-end
 
