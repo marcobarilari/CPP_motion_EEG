@@ -1,7 +1,4 @@
-function [Cfg, directions, speeds, modalities, EventDuration] = SS_Mot_ExpDesign(Cfg)
-
-Cfg.experimentType = 'Dots';   % Visual modality is in RDKs
-Cfg.possibleModalities = {'visual'}; % nombre de possibilites
+function [Cfg, directions, speeds, EventDuration] = SS_Mot_ExpDesign(Cfg)
 
 
 %% Parameters for monitor setting
@@ -11,9 +8,10 @@ Cfg.apD = 40; % diameter/length of side of aperture in Visual angles
 
 
 %% Dots param
-Cfg.coh = 1;                                      % Coherence Level (0-1)
-Cfg.maxDotsPerFrame = 300;                        % Maximum number dots per frame (Number must be divisible by 3)
-Cfg.dotLifeTime = 1;                            % Dot life time in seconds
+% Maximum number dots per frame
+Cfg.maxDotsPerFrame = 300;                        
+% Dot life time in seconds
+Cfg.dotLifeTime = 1;                            
 Cfg.dontclear = 0;
 Cfg.dotSize = .7;
 
@@ -35,6 +33,12 @@ Cfg.fixationCross_color = White ;
 Cfg.dotColor            = White ; 
 
 
+%% Trigger EEG
+Cfg.trigger.abort = 10;
+Cfg.trigger.start = 1;
+Cfg.trigger.end = 5;
+
+
 %% if Trial set the trial Cfg
 if nargin<1 %nargin = number of input arguments to an INLINE object or function.
     Cfg = trial_Cfg(); 
@@ -50,9 +54,8 @@ directions = repmat(-1, (Freq * Cfg.numRepetitions), 1);
 directions([ Freq:Freq*2:length(directions) ]) = 0 ; %#ok<*NBRAK>
 directions([ Freq*2:Freq*2:length(directions) ]) =180 ;
 
-numEvents = length(directions);
-
-speeds = ones(numEvents,1) * Cfg.speed ;% a matrix of speed values for each event 
+% a matrix of speed values for each event
+speeds = ones(length(directions),1) * Cfg.speed ; 
 
 more off
 

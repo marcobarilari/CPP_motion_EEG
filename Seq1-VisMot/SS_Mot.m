@@ -1,28 +1,35 @@
 function SS_Mot()
 %% experience eye tracking and auditory motion
 
-sca;
 clc
-clear Screen;
+clear
+% cleanUp
 
 
 %% Setting
-% 1 will skip sync tests for mac issues
-% but should be set to 0 afterwards and during testing
+% 1 will skip sync tests, 0 otherwise
 SkipSyncTest = 1 ; 
 
 debug = true;
 
-% % if you would like to test on a part of the screen, change to 1;
-device = 'F';
+% set to EEG to use triggers
+device = 'F'; %EEG
 
- % Since its an event design, every block will have 1 event.
-Cfg.numEventsPerCondition = 1;
+
+
+
+
 % event speed
 Cfg.speed = .00001; % in visual angle per second
+
+
+
+
+
+
 % number of event per condition
 Cfg.numRepetitions = 60; 
-Cfg.BaseFreq = 10;
+Cfg.BaseFreq = 4;
 
 onsetDelay = 2; % number of seconds before the motion stimuli are presented
 
@@ -32,26 +39,33 @@ yDisplacementFixCross = 0 ;
 
 
 %% Experimental Design
-[Cfg, directions, speeds, ~, EventDuration] = SS_Mot_ExpDesign(Cfg);
+[Cfg, directions, speeds, EventDuration] = SS_Mot_ExpDesign(Cfg);
 numEvents = length(directions);
 
 
 %%  Get Subject Name and run number
 if debug
-    subjectName = [];
+    subjName = [];
     runNumber = [];
 else
-    subjectName = input('Enter Subject Name: ','s'); %#ok<UNRCH>
+    subjName = input('Enter Subject Name: ','s'); %#ok<UNRCH>
     runNumber = input('Enter the run Number: ','s');
 end
 
-if isempty(subjectName)
-    subjectName = 'trial';
+if isempty(subjName)
+    subjName = 'trial';
 end
 if isempty(runNumber)
-    runNumber = 'trial';
+    runNumber = '1';
 end
 
+DateFormat = 'yyyy_mm_dd_HH_MM';
+
+Filename = fullfile(pwd, 'output', ...
+    ['sub-' subjName, ...
+    '_run_' num2str((runNumber)), ...
+    '_task_motionFVP_events', ...
+    datestr(now, DateFormat)]);
 
 
 % put everything into a try / catch in case the poop hits the fan
@@ -69,6 +83,8 @@ try
     end
     
     AssertOpenGL;
+    
+    Cfg.KeyCodes = setupKeyCodes;
     
     Screen('Preference','SkipSyncTests', SkipSyncTest);
     
@@ -107,7 +123,6 @@ try
     Cfg.ndots = min(Cfg.maxDotsPerFrame, ceil( Cfg.d_ppd .* Cfg.d_ppd  / Cfg.monRefresh)); 
     speeds = speeds * Cfg.ppd; % Convert the dot speed to pixels
     
-    
     %% Fixation Cross
     xCoords = [-Cfg.fixCrossDimPix Cfg.fixCrossDimPix 0 0] + xDisplacementFixCross;
     yCoords = [0 0 -Cfg.fixCrossDimPix Cfg.fixCrossDimPix] + yDisplacementFixCross;
@@ -120,20 +135,23 @@ try
     eventEnds      = zeros(numEvents,1);
     eventDurations = zeros(numEvents,1);
     
-    allResponses = [] ;
-    
 
     %% txt logfiles
-    if ~exist('logfiles','dir')
-        mkdir('logfiles')
-    end
+    [~, ~, ~] = mkdir('logfiles');
+
     
-    % EventTxtLogFile = fopen(fullfile('logfiles',[subjectName,'_run_',num2str((runNumber)),'_Events.txt']),'w');
+    
+    
+    
+    
+    EventTxtLogFile = fopen([Filename '.txt'],'w');
     % fprintf(EventTxtLogFile,'%12s %12s %12s %18s %12s %12s %12s \n',...
-    %     'EventNumber','Modality','Direction','Speed','Onset','End','Duration');
-    %
-    % ResponsesTxtLogFile = fopen(fullfile('logfiles',[subjectName,'_run_',num2str((runNumber)),'_Responses.txt']),'w');
-    % fprintf(ResponsesTxtLogFile,'%12s \n','Responses');
+    %     'EventNumber','Direction','Speed','Onset','End','Duration');
+    
+    
+    
+    
+    
     
     HideCursor;
     
@@ -146,7 +164,7 @@ try
     WaitSecs(onsetDelay);
     
     Cfg.Experiment_start = GetSecs;
-    
+
     % For each event
     for iEvent = 1:numEvents
         
@@ -159,11 +177,39 @@ try
         
         %% RUN DO DOTS
         if strcmp(device,'EEG') && iEvent == 1
-            b = 200;
-            sendparallelbyte(b);
+            sendparallelbyte(Cfg.trigger.start);
+            sendparallelbyte(0);
         end
         
-        responseTimeWithinEvent = DoDotMo( Cfg, iEventDirection, iEventSpeed, iEventDuration );
+        QUIT = DoDotMo( Cfg, iEventDirection, iEventSpeed, iEventDuration );
+
+        if strcmp(device,'EEG')
+            sendparallelbyte(0);
+        end
+        
+        if QUIT
+            if strcmp(device,'EEG')
+                sendparallelbyte(Cfg.trigger.abort);
+                sendparallelbyte(0);
+            end
+            CleanUp
+            disp(' ');
+            disp('Experiment aborted by user!');
+            disp(' ');
+            
+            return
+        end
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         
         %% Event End and Duration
         eventEnds(iEvent,1) = GetSecs-Cfg.Experiment_start;
@@ -172,34 +218,35 @@ try
         %% Event txt_Logfile
         %     fprintf(EventTxtLogFile,'%12.0f %12s %12.0f %12.2f %12.5f %12.5f %12.5f \n',...
         %         iEvent,modalities{iEvent},iEventDirection,iEventSpeed,eventOnsets(iEvent,1),eventEnds(iEvent,1),eventDurations(iEvent,1));
-        %
-        % wait for the inter-stimulus interval
-        %WaitSecs(Cfg.interstimulus_interval);
+
+        
+        
+        
+        
+        
+        
+        
+        
+        
         
     end
     
     if strcmp(device,'EEG')
-        sendparallelbyte(0);
-        b = 100;
-        sendparallelbyte(b);
+        sendparallelbyte(Cfg.trigger.end);
         sendparallelbyte(0);
     end
     
-    % Assign the targets onsets (higher speed and change in fixation and sort
-    % them) to one variable to used later for behavioral assessment
-    %la fonction sort signifie tri ascendant
-    %targetOnsets = sort([eventOnsets(IsFixationTarget==1)]);
-    
-    Screen('Flip', Cfg.win);
-    
     % close txt log files
-    % fclose(EventTxtLogFile);
-    % fclose(ResponsesTxtLogFile);
+    fclose(EventTxtLogFile);
     
     TotalExperimentTime = GetSecs-Cfg.Experiment_start;
     
     %% Save mat log files
-    save(fullfile('logfiles',[subjectName,'_run_',num2str((runNumber)),'_all.mat']))
+    if IsOctave
+        save([Filename' '.mat'], '-mat7-binary');
+    else
+        save([Filename' '.mat'], '-v7.3');
+    end
     
     cleanUp
     
@@ -216,5 +263,12 @@ Priority(0);
 ShowCursor
 sca
 clear Screen % remove PsychDebugWindowConfiguration
+end
+
+function KeyCodes = setupKeyCodes
+% Setup keycode strusave([Filename' '.mat'])cture for typical keys
+KbName('UnifyKeyNames')
+KeyCodes.Resp = KbName('space');
+KeyCodes.Escape = KbName('ESCAPE');
 end
 

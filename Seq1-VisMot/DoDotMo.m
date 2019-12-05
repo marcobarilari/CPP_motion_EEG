@@ -1,7 +1,5 @@
-function responseTimeWithinEvent = DoDotMo(Cfg, directions, dotSpeed, duration)
+function QUIT = DoDotMo(Cfg, directions, dotSpeed, duration)
 %DODOTMO This function draws a specific type of dots
-
-responseTimeWithinEvent = [];
 
 w = Cfg.win;
 
@@ -9,9 +7,17 @@ w = Cfg.win;
 blank_frames = 4;
 FrameInMovie = floor(duration/Cfg.ifi) - blank_frames;
 
-FrameInMovie = 300;
 
-FractionToResamp = 10^-4; % per frame
+
+
+
+FrameInMovie = 1000;
+FractionToResamp = 5*10^-4; % per frame
+
+
+
+
+
 
 % dot stuff
 ndots = Cfg.ndots;
@@ -32,16 +38,8 @@ FrameLeft = FrameInMovie;
 
 while FrameLeft > 0
     
-%     N = sum((this_s > 1 || this_s < 0 || repmat(dotTime(:,1) > Cfg.dotLifeTimeFrame,1,2))')' ~= 0 ;
-%     
-%     %% Re-allocate the dots to random positions
-%     if sum(N) > 0
-%         this_s(N,:) = rand(sum(N),2);             % re-allocate the chosen dots to random positions
-%         dotTime(find(N==1),:) = 1;                % find the dots that were re-allocated and change its lifetime to 1
-%     end
-    
+    [QUIT] = getBehResp(Cfg);
 
-    
     % Convert to stuff we can actually plot
     this_x(:,1:2) = Cfg.d_ppd(1) * dotPosition;
     
@@ -57,7 +55,7 @@ while FrameLeft > 0
     dots2Display(:,outCircle) = NaN;
     
     %% Now do next drawing commands
-    % Draw the fixation 
+    % Draw the fixation
     Screen('DrawLines', w, Cfg.allCoords, Cfg.lineWidthPix, Cfg.fixationCross_color, [Cfg.center(1) Cfg.center(2)], 1);
     
     Screen('DrawDots', w, dots2Display, Cfg.dotSize, Cfg.dotColor, Cfg.center,2);
@@ -67,12 +65,19 @@ while FrameLeft > 0
     Screen('Flip', w, 0);
     
     %% update dot position, frame left to play and resample dots
-    dotPosition = dotPosition + dxdy;  
+    dotPosition = dotPosition + dxdy;
     
     resample = any([rand(ndots,1)<FractionToResamp outCircle'], 2);
     
+    
+    
+    % improve to increase reseeding in direction opposite of motion to
+    % avoid imbalance
     dotPosition(resample, :) = rand(sum(resample),2);
     
+    
+    
+   
     FrameLeft = FrameLeft - 1;
     
 end
@@ -80,10 +85,24 @@ end
 
 %% Present last dots
 % Draw the fixation cross
-Screen('DrawLines', w, Cfg.allCoords, Cfg.lineWidthPix, Cfg.fixationCross_color, [Cfg.center(1) Cfg.center(2)], 1); 
+Screen('DrawLines', w, Cfg.allCoords, Cfg.lineWidthPix, Cfg.fixationCross_color, [Cfg.center(1) Cfg.center(2)], 1);
 
 Screen('Flip', w, 0);
 
 WaitSecs(Cfg.ifi*blank_frames);
 
+end
+
+
+function [QUIT] = getBehResp(Cfg)
+
+[Keypr, ~, Key] = KbCheck;
+
+QUIT = false;
+
+if Keypr && Key(Cfg.KeyCodes.Escape)
+    QUIT= true;
+end
+
+end
 
