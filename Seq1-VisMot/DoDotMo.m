@@ -8,8 +8,9 @@ w = Cfg.win;
 
 % Show for how many frames
 blank_frames = 1;
-continue_show = floor(duration/Cfg.ifi) - blank_frames;
+FrameInMovie = floor(duration/Cfg.ifi) - blank_frames;
 
+FrameInMovie = 1000;
 
 % dot stuff
 ndots = Cfg.ndots;
@@ -19,26 +20,27 @@ if directions < 0
 end
 
 % dxdy is an N x 2 matrix that gives jumpsize in units on 0..1
-dxdy = repmat(dotSpeed * Cfg.apD * (3/Cfg.monRefresh) ...
-    * [cos(pi*directions/180.0) -sin(pi*directions/180.0)], ndots,1);
+dxdy = repmat(dotSpeed * Cfg.ppd / Cfg.monRefresh ...
+    * [cos(pi*directions/180.0) -sin(pi*directions/180.0)], ndots, 1);
+
+% dxdy = repmat([.0001 0] * Cfg.ppd / Cfg.monRefresh, ndots,1);
 
 % ARRAYS, INDICES for loop
 dotPosition = rand(ndots, 2); % array of dot positions raw [xposition, yposition]
 
-% Divide dots into three sets
-Ls = cumsum(ones(ndots,3)) + repmat([0 ndots ndots*2], ndots, 1);
-
 % Create a ones vector to update to dotlife time of each dot
-dotTime = ones(size(Ls,1),2);
+% dotTime = ones(size(dotPosition,1),2);
 
 
 %%
 responseTimeWithinEvent = [];
 
-while continue_show
+FrameLeft = FrameInMovie
+
+while FrameLeft > 0
 
 %     Lthis  = Ls(:, 1)
-%     this_s = dotPosition(Lthis,:);
+%     this_s = dotPosition;
 % 
 %     % Compute new locations
 %     % L are the dots that will be moved
@@ -59,15 +61,15 @@ while continue_show
     
     %%
     % add one frame to the dot lifetime to each dot
-    dotTime = dotTime + 1;
+%     dotTime = dotTime + 1;
     
     % Convert to stuff we can actually plot
-    this_x(:,1:2) = floor(Cfg.d_ppd(1) * dotPosition); % pix/ApUnit
+    this_x(:,1:2) = Cfg.d_ppd(1) * dotPosition;
     
     % This assumes that zero is at the top left, but we want it to be in the
     % center, so shift the dots up and left, which just means adding half of
     % the aperture size to both the x and y direction.
-    dot_show = (this_x(:,1:2) - Cfg.d_ppd/2)';
+    dot_show = (this_x - Cfg.d_ppd/2)';
     
     % NaN out-of-circle dots
     xyDis = dot_show;
@@ -85,12 +87,11 @@ while continue_show
     
     Screen('Flip', w, 0);
     
-    % Update the arrays for works next time
-%     dotPosition(Lthis, :) = this_s;
     
+    dotPosition = dotPosition + dxdy;    
     
     %% Check for end of loop
-    continue_show = continue_show - 1;
+    FrameLeft = FrameLeft - 1;
     
 end
 

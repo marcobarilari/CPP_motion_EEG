@@ -5,9 +5,9 @@ Cfg.possibleModalities = {'visual'}; % nombre de possibilites
 
 
 %% Parameters for monitor setting
-Cfg.mon_horizontal_cm = 42; % Width of the monitor in cm
-Cfg.view_dist_cm = 134; % Distance from viewing screen in cm
-Cfg.apD = 8; % diameter/length of side of aperture in Visual angles
+Cfg.mon_horizontal_cm = 30; % Width of the monitor in cm
+Cfg.view_dist_cm = 20; % Distance from viewing screen in cm
+Cfg.apD = 40; % diameter/length of side of aperture in Visual angles
 
 
 %% Dots param
@@ -15,7 +15,7 @@ Cfg.coh = 1;                                      % Coherence Level (0-1)
 Cfg.maxDotsPerFrame = 300;                        % Maximum number dots per frame (Number must be divisible by 3)
 Cfg.dotLifeTime = 1;                            % Dot life time in seconds
 Cfg.dontclear = 0;
-Cfg.dotSize = 0.1;
+Cfg.dotSize = .5;
 
 
 %% Fixation Cross parameters
@@ -46,18 +46,15 @@ end
 Freq = Cfg.BaseFreq; 
 EventDuration = 1/Freq;
 
-speedEvent = Cfg.speedEvent;
-numRepetitions = Cfg.numRepetitions;
+% directions = repmat(0,(Freq*numRepetitions), 1);
 
-directions = repmat(0,(Freq*numRepetitions), 1);
-
-% directions = repmat(-1,(Freq*numRepetitions), 1);
-% directions([Freq:Freq*2:length(directions)])=0 ; %#ok<*NBRAK>
-% directions([Freq*2:Freq*2:length(directions)])=180 ;
+directions = repmat(-1, (Freq * Cfg.numRepetitions), 1);
+directions([ Freq:Freq*2:length(directions) ]) =0 ; %#ok<*NBRAK>
+directions([ Freq*2:Freq*2:length(directions) ]) =180 ;
 
 numEvents = length(directions);
 
-speeds = ones(numEvents,1)* speedEvent ;% a matrix of speed values for each event 
+speeds = ones(numEvents,1) * Cfg.speed ;% a matrix of speed values for each event 
 
 modalities = repmat({'visual'}, numEvents, 1);
 

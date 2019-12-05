@@ -19,10 +19,10 @@ device = 'F';
  % Since its an event design, every block will have 1 event.
 Cfg.numEventsPerCondition = 1;
 % event speed
-Cfg.speedEvent = 2; 
+Cfg.speed = .0001; % in visual angle per second
 % number of event per condition
 Cfg.numRepetitions = 60; 
-Cfg.BaseFreq = 2;
+Cfg.BaseFreq = 4;
 
 onsetDelay = 2; % number of seconds before the motion stimuli are presented
 
