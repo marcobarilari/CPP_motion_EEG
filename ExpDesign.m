@@ -1,4 +1,4 @@
-function [Cfg, directions, speeds, EventDuration, ISI] = SS_Mot_ExpDesign(Cfg)
+function [Cfg, directions, speeds, EventDuration, ISI] = ExpDesign(Cfg)
 
 Cfg.speed = .00001; % event speed in visual angle per second
 

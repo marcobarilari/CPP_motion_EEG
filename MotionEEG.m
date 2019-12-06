@@ -1,4 +1,4 @@
-function SS_Mot()
+function MotionEEG()
 %% script to present either EEG motion FVP or motion ERP
 
 
@@ -56,7 +56,7 @@ Cfg.runNumber = runNumber;
 
 
 %% Experimental Design
-[Cfg, directions, speeds, EventDuration, ISI] = SS_Mot_ExpDesign(Cfg);
+[Cfg, directions, speeds, EventDuration, ISI] = ExpDesign(Cfg);
 numEvents = length(directions);
 
 
