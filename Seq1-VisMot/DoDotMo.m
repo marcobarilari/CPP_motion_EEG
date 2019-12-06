@@ -1,7 +1,9 @@
-function [QUIT, responseTime] = DoDotMo(Cfg, directions, dotSpeed, duration)
+function [QUIT, responseTime, Onset, Offset] = DoDotMo(Cfg, directions, dotSpeed, duration)
 %DODOTMO This function draws a specific type of dots
 
 responseTime = [];
+Onset = nan;
+Offset =  nan;
 
 w = Cfg.win;
 
@@ -37,6 +39,9 @@ dotPosition = rand(ndots, 2); % array of dot positions raw [xposition, yposition
 
 FrameLeft = FrameInMovie;
 
+sendTrigger('event', Cfg);
+sendTrigger('reset', Cfg);
+
 while FrameLeft > 0
     
     [QUIT, responseTime] = getBehResp(Cfg, responseTime);
@@ -67,7 +72,11 @@ while FrameLeft > 0
     
     Screen('DrawingFinished', w);
     
-    Screen('Flip', w, 0);
+    vbl = Screen('Flip', w, 0);
+    
+    if FrameLeft == FrameInMovie
+        Onset = vbl;
+    end
     
     %% update dot position, frame left to play and resample dots
     dotPosition = dotPosition + dxdy;
@@ -79,10 +88,10 @@ while FrameLeft > 0
     % improve to increase reseeding in direction opposite of motion to
     % avoid imbalance
     dotPosition(resample, :) = rand(sum(resample),2);
+
     
     
     
-   
     FrameLeft = FrameLeft - 1;
     
 end
@@ -90,9 +99,10 @@ end
 % Draw the fixation cross
 Screen('DrawLines', w, Cfg.allCoords, Cfg.lineWidthPix, Cfg.fixationCross_color, [Cfg.center(1) Cfg.center(2)], 1);
 
-Screen('Flip', w, 0);
+Offset = Screen('Flip', w, 0);
 
-
+Onset = Onset - Cfg.Experiment_start;
+Offset = Offset - Cfg.Experiment_start;
 
 end
 

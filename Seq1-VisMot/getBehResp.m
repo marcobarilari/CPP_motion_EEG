@@ -7,8 +7,13 @@ QUIT = false;
 if Keypr
     if Key(Cfg.KeyCodes.Escape)
         QUIT= true;
+        
     elseif Key(Cfg.KeyCodes.Resp) 
         responseTime(end+1) = secs;
+        
+        sendTrigger('resp', Cfg)
+        sendTrigger('reset', Cfg)
+        
     end
 end
 

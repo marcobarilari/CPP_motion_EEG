@@ -1,19 +1,35 @@
-function [Cfg, directions, speeds, EventDuration] = SS_Mot_ExpDesign(Cfg)
+function [Cfg, directions, speeds, EventDuration, ISI] = SS_Mot_ExpDesign(Cfg)
 
-if Cfg.debug
-    % number of event per condition
-    Cfg.numRepetitions = 20;
-    Cfg.BaseFreq = 3;
-    Cfg.speed = .00001; % event speed in visual angle per second
-else
-    % number of event per condition
-    Cfg.numRepetitions = 60;
-    Cfg.BaseFreq = 8;
-    Cfg.speed = .00001; % event speed in visual angle per second
+Cfg.speed = .00001; % event speed in visual angle per second
+
+switch Cfg.task
+    
+    case 'motionFVP'
+        Cfg.numTrials = 60;
+        Cfg.FixISI = 0.05; % fixed part of the ISI
+        Cfg.MaxRandISI = 0; % random part of the ISI (uniform distribution)
+        if mod(str2double(Cfg.runNumber), 2)==0
+            Cfg.sequence = 'R'; % sequence where the RIGHT direction is tagged
+        else
+            Cfg.sequence = 'L'; % sequence where the LEFT direction is tagged
+        end
+        Cfg.BaseFreq = 8;
+        
+    case 'motionERP'
+        Cfg.numTrials = 120;
+        Cfg.FixISI = 1;
+        Cfg.MaxRandISI = 1;
+        Cfg.sequence = '0';
+        Cfg.EventDuration = 1; % in seconds
+        Cfg.percTarget = 10;
+        Cfg.speedTarget = Cfg.speed * 2;
+        
 end
 
-Cfg.task = 'motionFVP';
-Cfg.sequence = 1;
+if Cfg.debug
+    Cfg.numTrials = 20;
+    Cfg.BaseFreq = 8;
+end
 
 
 %% Parameters for monitor setting
@@ -24,7 +40,7 @@ Cfg.apD = 40; % diameter/length of side of aperture in Visual angles
 
 %% Dots param
 % Maximum number dots per frame
-Cfg.maxDotsPerFrame = 300;                                                  
+Cfg.maxDotsPerFrame = 300;
 Cfg.dontclear = 0;
 Cfg.dotSize = .7;
 
@@ -39,23 +55,18 @@ Cfg.yDisplacementFixCross = 0 ;
 
 
 %% Color Parameters
-White = [255 255 255]; 
-Black = [ 0   0   0 ]; 
+White = [255 255 255];
+Black = [ 0   0   0 ];
 
-Cfg.textColor           = White ; 
-Cfg.Background_color    = Black ; 
-Cfg.fixationCross_color = White ; 
-Cfg.dotColor            = White ; 
+Cfg.textColor           = White ;
+Cfg.Background_color    = Black ;
+Cfg.fixationCross_color = White ;
+Cfg.dotColor            = White ;
 
 
 %% Timing
 % number of seconds before the motion stimuli are presented
-Cfg.onsetDelay = 2;
-
-
-Cfg.ISI = 0.075;
-
-
+Cfg.StartDelay = 2;
 
 
 %% Trigger EEG
@@ -64,37 +75,41 @@ Cfg.device = 'PC'; %EEG
 Cfg.trigger.abort = 10;
 Cfg.trigger.start = 1;
 Cfg.trigger.end = 5;
+Cfg.trigger.resp = 3;
 
 
-%% if Trial set the trial Cfg
-if nargin<1 %nargin = number of input arguments to an INLINE object or function.
-    Cfg = trial_Cfg(); 
-    fprintf('\n\n###################################\n')
-    fprintf('This is a trial experiment design\n')
-    fprintf('###################################\n\n')
+%% Create sequence
+
+% 0 --> right (0 degrees)
+% 1 --> up (90 degrees)
+% 2 --> left (180 degrees)
+% 3 --> down (270 degrees)
+% -1 --> static
+
+switch Cfg.task
+    
+    case 'motionFVP'
+        
+        Freq = Cfg.BaseFreq;
+        EventDuration = 1/Freq;
+        
+        switch Cfg.sequence
+            case 'L'
+                directions = repmat(-1, (Freq * Cfg.numTrials), 1);
+                directions([ Freq:Freq*2:length(directions) ]) = 180 ; %#ok<*NBRAK>
+                directions([ Freq*2:Freq*2:length(directions) ]) = 180 ;
+        end
+        
+        % a vector of speed values for each event
+        speeds = ones(length(directions),1) * Cfg.speed ;
+        
+        % a vector of duration values for each event
+        EventDuration = ones(length(directions),1) * EventDuration ;
+        
+        ISI = ones(length(directions),1) * Cfg.FixISI + rand(length(directions), 1) * Cfg.MaxRandISI;
+        
 end
-
-Freq = Cfg.BaseFreq; 
-EventDuration = 1/Freq;
-
-directions = repmat(-1, (Freq * Cfg.numRepetitions), 1);
-directions([ Freq:Freq*2:length(directions) ]) = 0 ; %#ok<*NBRAK>
-directions([ Freq*2:Freq*2:length(directions) ]) =180 ;
-
-% a matrix of speed values for each event
-speeds = ones(length(directions),1) * Cfg.speed ; 
-
-% a matrix of speed values for each event
-EventDuration = ones(length(directions),1) * EventDuration ; 
 
 more off
 
-end
-
-%% Trial Cfg 
-% Setting a trial Cfg for testing purposes only
-function Cfg = trial_Cfg()
-Cfg.BaseFreq = 2; % hz
-Cfg.speedEvent = 6 ;
-Cfg.numRepetitions = 2;
 end

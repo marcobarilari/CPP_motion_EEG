@@ -7,14 +7,14 @@ function SS_Mot()
 %  - time of presentation does not match actual presented time
 %  - fix inhomogeneous dot density in direction opposite of motion 
 %  - express lifetime of dots on seconds and not in number of killed by frame
-%  - add possibility to add actual response collection
+%  - generate stim sequences
 
 % for FVP
 %  - make target stim not directly linked to base frequency
 
 % for ERP
-%  - add ISI
-%  - include triggers in response
+%  - generate stim sequences (ISI, duration, speed, direction)
+
 
 %% 
 clc
@@ -29,36 +29,45 @@ Cfg.debug = true;
 SkipSyncTest = 1 ;
 
 
-%% Experimental Design
-[Cfg, directions, speeds, EventDuration] = SS_Mot_ExpDesign(Cfg);
-numEvents = length(directions);
-
-
-%%  Get Subject Name and run number
+%%  Get Subject name, run number, task nature
 if Cfg.debug
     subjName = [];
     runNumber = [];
 else
-    subjName = input('Enter Subject Name: ','s');
-    runNumber = input('Enter the run Number: ','s');
+    subjName = input('Enter Subject Name: ', 's');
+    task = input('Enter task number (1 - FVP ; 2 - ERP): ', 's');
+    runNumber = input('Enter the run Number: ', 's');
 end
 
-if isempty(subjName)
+if isempty(subjName) || isempty(runNumber) || task
     subjName = 'trial';
-end
-if isempty(runNumber)
     runNumber = '1';
+    task = 1;
 end
+
+switch task
+    case 1
+        Cfg.task = 'motionFVP';
+    case 2
+        Cfg.task = 'motionERP';
+end
+
+Cfg.runNumber = runNumber;
+
+
+%% Experimental Design
+[Cfg, directions, speeds, EventDuration, ISI] = SS_Mot_ExpDesign(Cfg);
+numEvents = length(directions);
 
 
 %% logfiles
 DateFormat = 'yyyy_mm_dd_HH_MM';
 
 Filename = fullfile(pwd, 'logfiles', ...
-    ['sub-' subjName, ...
-    '_run-' num2str((runNumber)), ...
+    ['sub-'  subjName, ...
+    '_run-'  num2str((runNumber)), ...
     '_task-' Cfg.task, ...
-    '_seq-' num2str(Cfg.sequence), ...
+    '_seq-'  Cfg.sequence, ...
     '_events', ...
     datestr(now, DateFormat)]);
 
@@ -66,12 +75,13 @@ Filename = fullfile(pwd, 'logfiles', ...
 
 EventTxtLogFile = fopen([Filename '.tsv'], 'w');
 
-fprintf(EventTxtLogFile, '%s\t%s\t%s\t%s\t%s\n',...
+fprintf(EventTxtLogFile, '%s\t%s\t%s\t%s\t%s\t%s\n',...
     'EventNumber',...
     'Direction',...
     'Speed',...
     'Onset',...
-    'End');
+    'Offset',...
+    'ISI');
 
 
 % put everything into a try / catch in case the poop hits the fan
@@ -79,9 +89,7 @@ try
     
     
     %% Open Parallel port if EEG
-    if strcmp(Cfg.device, 'EEG')
-        openparallelport_inpout32(hex2dec('d010'))
-    end
+    sendTrigger('open', Cfg);
     
     
     %%  Initialize
@@ -94,12 +102,14 @@ try
     
     Cfg.KeyCodes = setupKeyCodes;
     
-    Screen('Preference','SkipSyncTests', SkipSyncTest);
+    Screen('Preference', 'SkipSyncTests', SkipSyncTest);
     
     % Select screen with maximum id for output window:
     screenid = max(Screen('Screens'));
     PsychImaging('PrepareConfiguration');
+    
     [Cfg.win, Cfg.winRect] = PsychImaging('OpenWindow', screenid, Cfg.Background_color);
+    
     Cfg.center = [Cfg.winRect(3), Cfg.winRect(4)]/2; %  Get the Center of the Screen
     
     % Enable alpha-blending, set it to a blend equation useable for linear superposition with
@@ -110,7 +120,7 @@ try
     %% Screen details
     % Query frame duration
     Cfg.ifi = Screen('GetFlipInterval', Cfg.win);
-    
+    % monitor refresh rate
     Cfg.monRefresh =  1/Cfg.ifi;
     
     % % Everything is initially in coordinates of visual degrees, convert to pixels
@@ -124,109 +134,93 @@ try
     Screen('TextStyle', Cfg.win, 1);
     
     
-    %% Dots
+    %% Dots (convert everything to pixels)
     Cfg.d_ppd = floor(Cfg.apD * Cfg.ppd);                  % Convert the aperture diameter to pixels
     Cfg.dotSize = floor (Cfg.ppd * Cfg.dotSize);           % Convert the dot Size to pixels
     Cfg.ndots = min(Cfg.maxDotsPerFrame, ceil( Cfg.d_ppd .* Cfg.d_ppd  / Cfg.monRefresh));
     speeds = speeds * Cfg.ppd; % Convert the dot speed to pixels
     
     
-    %% Fixation Cross
+    %% Fixation Cross poistion
     xCoords = [-Cfg.fixCrossDimPix Cfg.fixCrossDimPix 0 0] + Cfg.xDisplacementFixCross;
     yCoords = [0 0 -Cfg.fixCrossDimPix Cfg.fixCrossDimPix] + Cfg.yDisplacementFixCross;
     Cfg.allCoords = [xCoords; yCoords];
     
     
-    %% Empty vectors and matrices for speed
-    eventOnsets    = zeros(numEvents,1);
-    eventEnds      = zeros(numEvents,1);
+    %% Initialize vectors for onset and offset
+    Onsets = zeros(numEvents,1);
+    Offsets = zeros(numEvents,1);
     
     
     %% Experiment Start
     
     HideCursor;
     
+    % draw fixation cross
     Screen('DrawLines', Cfg.win, Cfg.allCoords, Cfg.lineWidthPix, Cfg.fixationCross_color , [Cfg.center(1) Cfg.center(2)], 1);
     
-    Screen('Flip',Cfg.win);
+    Screen('Flip', Cfg.win);
     
-    WaitSecs(Cfg.onsetDelay);
+    WaitSecs(Cfg.StartDelay);
     
     Cfg.Experiment_start = GetSecs;
     
-    if strcmp(Cfg.device,'EEG')
-        sendparallelbyte(Cfg.trigger.start);
-        sendparallelbyte(0);
-    end
-    
+    % start trigger
+    sendTrigger('start', Cfg)
+    sendTrigger('reset', Cfg)
     
     % For each event
     for iEvent = 1:numEvents
         
+        
         iEventDirection = directions(iEvent,1);    % Direction of that event
         iEventSpeed = speeds(iEvent,1);            % Speed of that event
-        iEventDuration = EventDuration(iEvent,1);           % Duration of events
-        
-        % Event Onset
-        eventOnsets(iEvent,1) = GetSecs-Cfg.Experiment_start;
+        iEventDuration = EventDuration(iEvent,1);  % Duration of events
+        iEventISI = ISI(iEvent,1);                 % ISI of events
+            
         
         %% RUN DO DOTS
+        [QUIT, responseTime, Onsets(iEvent,1), Offsets(iEvent,1)] = ...
+            DoDotMo(Cfg, iEventDirection, iEventSpeed, iEventDuration );
+
+        abortExperiment(QUIT, Cfg)
+ 
         
-        [QUIT, responseTime] = DoDotMo( Cfg, iEventDirection, iEventSpeed, iEventDuration );
-        
-        if strcmp(Cfg.device, 'EEG')
-            sendparallelbyte(0);
+        %% wait for the ISI and register the responseKey
+        while (GetSecs - Cfg.Experiment_start - Offsets(iEvent,1)) <= iEventISI
+            
+            [QUIT, responseTime] = getBehResp(Cfg, responseTime);
+            
+            abortExperiment(QUIT, Cfg)
+
         end
-        
-        if QUIT
-            
-            if strcmp(Cfg.device, 'EEG')
-                sendparallelbyte(Cfg.trigger.abort);
-                sendparallelbyte(0);
-            end
-            
-            cleanUp
-            
-            disp(' ');
-            disp('Experiment aborted by user!');
-            disp(' ');
-            
-            return
-        end
-        
-        
-        %% ISI
-        WaitSecs(Cfg.ISI);
         
         
         %% Event txt_Logfile
-        
-        eventEnds(iEvent,1) = GetSecs-Cfg.Experiment_start;
-        
-        fprintf(EventTxtLogFile,'%f\t%f\t%f\t%f\t%f\n',...
-            iEvent,...
-            iEventDirection,...
-            iEventSpeed,...
-            eventOnsets(iEvent,1),...
-            eventEnds(iEvent,1));
-        
-        
-        
-        
+
+        fprintf(EventTxtLogFile,'%f\t%f\t%f\t%f\t%f\t%f\n', ...
+            iEvent, ...
+            iEventDirection, ...
+            iEventSpeed, ...
+            Onsets(iEvent,1), ...
+            Offsets(iEvent,1), ...
+            iEventISI);
         
         % collect responses
         
         
         
         
+        
+        
+        
+        
     end
     
-    if strcmp(Cfg.device, 'EEG')
-        sendparallelbyte(Cfg.trigger.end);
-        sendparallelbyte(0);
-    end
+    sendTrigger('end', Cfg)
+    sendTrigger('reset', Cfg)
     
-    % write to log file and log files
+    % close log files
     fclose(EventTxtLogFile);
     
     TotalExperimentTime = GetSecs-Cfg.Experiment_start;
@@ -259,5 +253,20 @@ sca
 clear Screen % remove PsychDebugWindowConfiguration
 end
 
+function abortExperiment(QUIT, Cfg)
 
+if QUIT
+    
+    sendTrigger('abort', Cfg)
+    sendTrigger('reset', Cfg)
+    
+    cleanUp
+    
+    disp(' ');
+    disp('Experiment aborted by user!');
+    disp(' ');
+    
+    return
+end
 
+end
