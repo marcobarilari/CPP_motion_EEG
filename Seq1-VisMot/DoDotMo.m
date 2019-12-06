@@ -14,7 +14,7 @@ FrameInMovie = floor(duration/Cfg.ifi);
 
 
 
-FrameInMovie = 200;
+FrameInMovie = 150;
 FractionToResamp = 5*10^-4; % per frame
 
 

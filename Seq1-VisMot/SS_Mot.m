@@ -10,7 +10,7 @@ function SS_Mot()
 %  - generate stim sequences
 
 % for FVP
-%  - make target stim not directly linked to base frequency
+%  - generate stim sequences
 
 % for ERP
 %  - generate stim sequences (ISI, duration, speed, direction)

@@ -5,7 +5,7 @@ Cfg.speed = .00001; % event speed in visual angle per second
 switch Cfg.task
     
     case 'motionFVP'
-        Cfg.numTrials = 60;
+        Cfg.numTrials = 20*4;
         Cfg.FixISI = 0.05; % fixed part of the ISI
         Cfg.MaxRandISI = 0; % random part of the ISI (uniform distribution)
         if mod(str2double(Cfg.runNumber), 2)==0
@@ -27,7 +27,7 @@ switch Cfg.task
 end
 
 if Cfg.debug
-    Cfg.numTrials = 20;
+    Cfg.numTrials = 5*4;
     Cfg.BaseFreq = 8;
 end
 
@@ -42,7 +42,7 @@ Cfg.apD = 40; % diameter/length of side of aperture in Visual angles
 % Maximum number dots per frame
 Cfg.maxDotsPerFrame = 300;
 Cfg.dontclear = 0;
-Cfg.dotSize = .7;
+Cfg.dotSize = 1;
 
 
 %% Fixation Cross parameters
@@ -93,12 +93,28 @@ switch Cfg.task
         Freq = Cfg.BaseFreq;
         EventDuration = 1/Freq;
         
+        numDirections = Freq * Cfg.numTrials;
+        
+        if mod(numDirections, 4)~=0
+            error('Number of trials must be a multiple of 4')
+        end
+        
         switch Cfg.sequence
             case 'L'
-                directions = repmat(-1, (Freq * Cfg.numTrials), 1);
-                directions([ Freq:Freq*2:length(directions) ]) = 180 ; %#ok<*NBRAK>
-                directions([ Freq*2:Freq*2:length(directions) ]) = 180 ;
+                fillers = repmat([0 1 3], numDirections/4, 1);
+                target = 2;
+                
+            case 'R'
+                fillers = repmat([1 2 3], numDirections/4, 1);
+                target = 0;
         end
+        
+        directions = [];
+        for iRepeats = 1:size(fillers, 1)
+            directions = [directions fillers(iRepeats, randperm(3)) target]; %#ok<AGROW>
+        end
+        
+        directions = directions';
         
         % a vector of speed values for each event
         speeds = ones(length(directions),1) * Cfg.speed ;
@@ -107,8 +123,13 @@ switch Cfg.task
         EventDuration = ones(length(directions),1) * EventDuration ;
         
         ISI = ones(length(directions),1) * Cfg.FixISI + rand(length(directions), 1) * Cfg.MaxRandISI;
+
         
 end
+
+directions(directions==1) = 90;
+directions(directions==2) = 180;
+directions(directions==3) = 270;
 
 more off
 
