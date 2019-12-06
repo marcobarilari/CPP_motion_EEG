@@ -7,8 +7,6 @@ Offset =  nan;
 
 w = Cfg.win;
 
-duration
-
 % Show for how many frames
 FrameInMovie = floor(duration/Cfg.ifi);
 

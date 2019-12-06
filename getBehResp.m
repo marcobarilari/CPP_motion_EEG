@@ -2,19 +2,37 @@ function [QUIT, responseTime] = getBehResp(Cfg, responseTime)
 
 QUIT = false;
 
-[Keypr, secs, Key] = KbCheck;
+[Keypr, KeyTime, Key] = KbCheck;
 
 if Keypr
     if Key(Cfg.KeyCodes.Escape)
+        
         QUIT= true;
         
-    elseif Key(Cfg.KeyCodes.Resp) 
-        responseTime(end+1) = secs;
+    elseif Key(Cfg.KeyCodes.Resp)
         
-        sendTrigger('resp', Cfg)
-        sendTrigger('reset', Cfg)
+        
+        
+        
+        
+        % only collects responses if there was no previous response 
+        % need to find a way to collect several responses
+        
+        
+        
+        
+        
+        if isempty(responseTime)
+            
+            responseTime = KeyTime - Cfg.Experiment_start;
+            
+            sendTrigger('resp', Cfg)
+            sendTrigger('reset', Cfg)
+            
+        end
         
     end
+    
 end
 
 end

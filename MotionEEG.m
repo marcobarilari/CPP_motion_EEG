@@ -3,17 +3,18 @@ function MotionEEG()
 
 
 %% TO DO
-% fix timing in DoDotMo
+% in DoDotMo
 %  - time of presentation does not match actual presented time
 %  - fix inhomogeneous dot density in direction opposite of motion 
 %  - express lifetime of dots on seconds and not in number of killed by frame
-%  - generate stim sequences
 
-% for FVP
-%  - generate stim sequences
+% - collect several responses per trial
 
 % for ERP
 %  - generate stim sequences (ISI, duration, speed, direction)
+%  - improve log
+
+% need to add trial nature (target or not) in the sequences and add this to the log 
 
 
 %% 
@@ -56,7 +57,7 @@ Cfg.runNumber = runNumber;
 
 
 %% Experimental Design
-[Cfg, directions, speeds, EventDuration, ISI] = ExpDesign(Cfg);
+[Cfg, directions, speeds, duration, ISI] = ExpDesign(Cfg);
 numEvents = length(directions);
 
 
@@ -175,7 +176,7 @@ try
         
         iEventDirection = directions(iEvent,1);    % Direction of that event
         iEventSpeed = speeds(iEvent,1);            % Speed of that event
-        iEventDuration = EventDuration(iEvent,1);  % Duration of events
+        iEventDuration = duration(iEvent,1);  % Duration of events
         iEventISI = ISI(iEvent,1);                 % ISI of events
             
         
@@ -207,13 +208,19 @@ try
             iEventISI);
         
         % collect responses
+        if ~isempty(responseTime)
+            fprintf(EventTxtLogFile,'%s\t%s\t%s\t%f\t%s\t%s\n', ...
+                'NA', ...
+                'response', ...
+                'NA', ...
+                responseTime, ...
+                'NA', ...
+                'NA');
+            
+        end
         
-        
-        
-        
-        
-        
-        
+        clear iEvent iEventDirection iEventSpeed iEventDuration iEventISI responseTime
+
         
     end
     
@@ -229,6 +236,7 @@ try
     
     
     %% Save mat log files
+    clear DateFormat V QUIT ans screenid SkipSyncTest xCoords yCoords
     if IsOctave
         save([Filename '.mat'], '-mat7-binary');
     else

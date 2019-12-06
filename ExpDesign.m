@@ -1,4 +1,4 @@
-function [Cfg, directions, speeds, EventDuration, ISI] = ExpDesign(Cfg)
+function [Cfg, directions, speeds, duration, ISI] = ExpDesign(Cfg)
 
 Cfg.speed = .00001; % event speed in visual angle per second
 
@@ -13,25 +13,31 @@ switch Cfg.task
         else
             Cfg.sequence = 'L'; % sequence where the LEFT direction is tagged
         end
-        Cfg.EventDuration = 150 * 0.016; % in seconds
+        Cfg.EventDuration = 120/0 * 0.016; % in seconds --> 12 Hz
         Cfg.BaseFreq = 8;
         
         
         
         
-%         Cfg.EventDuration = 1/Cfg.BaseFreq;
-
-
-
+        %         Cfg.EventDuration = 1/Cfg.BaseFreq;
+        
+        
+        
         
     case 'motionERP'
         Cfg.numTrials = 120;
         Cfg.FixISI = 1;
         Cfg.MaxRandISI = 1;
         Cfg.sequence = '0';
-        Cfg.EventDuration = 1000 * 0.016; % in seconds % 1
+        Cfg.EventDuration = 1200 * 0.016; % in seconds
         Cfg.percTarget = 10;
         Cfg.speedTarget = Cfg.speed * 2;
+        
+        
+        
+        %         Cfg.EventDuration = 1;
+        
+        
         
 end
 
@@ -102,7 +108,7 @@ Cfg.trigger.resp = 3;
 switch Cfg.task
     
     case 'motionFVP'
-
+        
         numDirections = Cfg.BaseFreq * Cfg.numTrials;
         
         if mod(numDirections, 4)~=0
@@ -132,24 +138,85 @@ switch Cfg.task
         speeds = ones(length(directions),1) * Cfg.speed ;
         
         % a vector of duration values for each event
-        EventDuration = ones(length(directions),1) * Cfg.EventDuration ;
+        duration = ones(length(directions),1) * Cfg.EventDuration ;
         
         % a vector of ISI values for each event
         ISI = ones(length(directions),1) * Cfg.FixISI + rand(length(directions), 1) * Cfg.MaxRandISI;
-
+        
     case 'motionERP'
         
-        repeats = [repmat(-1, 8, 1) ; repmat(0, 4, 1) ; repmat(2, 4, 1)];
+        repeats = [...
+            repmat(1, 6, 1) ; repmat(2, 3, 1) ; repmat(3, 3, 1); ...
+            repmat(4, 6, 1) ; repmat(5, 3, 1) ; repmat(6, 3, 1)];
         
-        directions = repeats(randperm(length(repeats)));
+        repeats = repeats(randperm(length(repeats)));
         
-        % a vector of speed values for each event
-        speeds = ones(length(directions),1) * Cfg.speed ;
+        directions = [];
+        speeds = [];
+        duration = [];
+        ISI = [];
         
-        % a vector of duration values for each event
-        EventDuration = ones(length(directions),1) * Cfg.EventDuration ;
-        
-        ISI = ones(length(directions),1) * Cfg.FixISI + rand(length(directions), 1) * Cfg.MaxRandISI;
+        for iTrial = 1 : length(repeats)
+
+            switch repeats(iTrial)
+
+                
+                
+                % this needs refactoring
+                
+                
+                
+                
+                % Static trials
+                case -1
+                    directions(end+1,1) = -1;
+                    duration(end+1,1) = Cfg.EventDuration;
+                    ISI(end+1,1) = Cfg.FixISI + rand(1) * Cfg.MaxRandISI;
+                    speeds(end+1,1) = Cfg.speed; %#ok<*AGROW>
+                    
+                % Right - Left trials
+                case 2
+                    directions(end+1:end+2,1) = [0 2];
+                    duration(end+1:end+2,1) = repmat(Cfg.EventDuration/2, 2, 1);
+                    ISI(end+1:end+2,1) = [0 ; Cfg.FixISI + rand(1) * Cfg.MaxRandISI];
+                    speeds(end+1:end+2,1) = repmat(Cfg.speed, 2, 1);
+                    
+                % Left - Right trials
+                case 3
+                    directions(end+1:end+2,1) = [2 0];
+                    duration(end+1:end+2,1) = repmat(Cfg.EventDuration/2, 2, 1);
+                    ISI(end+1:end+2,1) = [0 ; Cfg.FixISI + rand(1) * Cfg.MaxRandISI];
+                    speeds(end+1:end+2,1) = repmat(Cfg.speed, 2, 1);
+                
+                % Static target trials
+                case 4
+                    directions(end+1,1) = -1;
+                    duration(end+1,1) = Cfg.EventDuration * 2;
+                    ISI(end+1,1) = Cfg.FixISI + rand(1) * Cfg.MaxRandISI;
+                    speeds(end+1,1) = Cfg.speed; %#ok<*AGROW>
+                
+                % Right - Left target trials
+                case 5
+                    directions(end+1:end+2,1) = [0 2];
+                    duration(end+1:end+2,1) = repmat(Cfg.EventDuration, 2, 1);
+                    ISI(end+1:end+2,1) = [0 ; Cfg.FixISI + rand(1) * Cfg.MaxRandISI];
+                    speeds(end+1:end+2,1) = repmat(Cfg.speed, 2, 1);
+                    
+                % Left - Right target trials    
+                case 6
+                    directions(end+1:end+2,1) = [2 0];
+                    duration(end+1:end+2,1) = repmat(Cfg.EventDuration, 2, 1);
+                    ISI(end+1:end+2,1) = [0 ; Cfg.FixISI + rand(1) * Cfg.MaxRandISI];
+                    speeds(end+1:end+2,1) = repmat(Cfg.speed, 2, 1);
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+            end
+        end
         
 end
 
