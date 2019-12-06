@@ -13,22 +13,35 @@ switch Cfg.task
         else
             Cfg.sequence = 'L'; % sequence where the LEFT direction is tagged
         end
+        Cfg.EventDuration = 150 * 0.016; % in seconds
         Cfg.BaseFreq = 8;
+        
+        
+        
+        
+%         Cfg.EventDuration = 1/Cfg.BaseFreq;
+
+
+
         
     case 'motionERP'
         Cfg.numTrials = 120;
         Cfg.FixISI = 1;
         Cfg.MaxRandISI = 1;
         Cfg.sequence = '0';
-        Cfg.EventDuration = 1; % in seconds
+        Cfg.EventDuration = 1000 * 0.016; % in seconds % 1
         Cfg.percTarget = 10;
         Cfg.speedTarget = Cfg.speed * 2;
         
 end
 
 if Cfg.debug
-    Cfg.numTrials = 5*4;
-    Cfg.BaseFreq = 8;
+    switch Cfg.task
+        case 'motionFVP'
+            Cfg.numTrials = 5*4;
+        case 'motionERP'
+            Cfg.numTrials = 20;
+    end
 end
 
 
@@ -89,11 +102,8 @@ Cfg.trigger.resp = 3;
 switch Cfg.task
     
     case 'motionFVP'
-        
-        Freq = Cfg.BaseFreq;
-        EventDuration = 1/Freq;
-        
-        numDirections = Freq * Cfg.numTrials;
+
+        numDirections = Cfg.BaseFreq * Cfg.numTrials;
         
         if mod(numDirections, 4)~=0
             error('Number of trials must be a multiple of 4')
@@ -109,6 +119,8 @@ switch Cfg.task
                 target = 0;
         end
         
+        % loop through blocks of 4 directions the last being the target one
+        % and the 3 previous being the fillers randomly shuffled
         directions = [];
         for iRepeats = 1:size(fillers, 1)
             directions = [directions fillers(iRepeats, randperm(3)) target]; %#ok<AGROW>
@@ -120,16 +132,32 @@ switch Cfg.task
         speeds = ones(length(directions),1) * Cfg.speed ;
         
         % a vector of duration values for each event
-        EventDuration = ones(length(directions),1) * EventDuration ;
+        EventDuration = ones(length(directions),1) * Cfg.EventDuration ;
         
+        % a vector of ISI values for each event
         ISI = ones(length(directions),1) * Cfg.FixISI + rand(length(directions), 1) * Cfg.MaxRandISI;
 
+    case 'motionERP'
+        
+        repeats = [repmat(-1, 8, 1) ; repmat(0, 4, 1) ; repmat(2, 4, 1)];
+        
+        directions = repeats(randperm(length(repeats)));
+        
+        % a vector of speed values for each event
+        speeds = ones(length(directions),1) * Cfg.speed ;
+        
+        % a vector of duration values for each event
+        EventDuration = ones(length(directions),1) * Cfg.EventDuration ;
+        
+        ISI = ones(length(directions),1) * Cfg.FixISI + rand(length(directions), 1) * Cfg.MaxRandISI;
         
 end
 
 directions(directions==1) = 90;
 directions(directions==2) = 180;
 directions(directions==3) = 270;
+
+
 
 more off
 

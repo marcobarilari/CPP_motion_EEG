@@ -7,6 +7,8 @@ Offset =  nan;
 
 w = Cfg.win;
 
+duration
+
 % Show for how many frames
 FrameInMovie = floor(duration/Cfg.ifi);
 
@@ -14,7 +16,7 @@ FrameInMovie = floor(duration/Cfg.ifi);
 
 
 
-FrameInMovie = 150;
+
 FractionToResamp = 5*10^-4; % per frame
 
 

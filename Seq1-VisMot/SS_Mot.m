@@ -42,7 +42,7 @@ end
 if isempty(subjName) || isempty(runNumber) || task
     subjName = 'trial';
     runNumber = '1';
-    task = 1;
+    task = 2;
 end
 
 switch task
